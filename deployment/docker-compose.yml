@@ -1,0 +1,47 @@
+version: "3"
+
+services:
+  wallet-app:
+    build: 
+      context: .
+      dockerfile: deployment/Dockerfile
+    container_name: wallet-service-dev
+    hostname: wallet-service-dev
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - code-network
+    ports:
+      - 8080:8080
+  postgres:
+    image: postgres:14-alpine
+    ports:
+      - 5432:5432
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_PASSWORD=strong_password
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=wallet_db
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 1s
+      timeout: 5s
+      retries: 10
+    networks:
+      - code-network
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8089:8080
+
+
+networks:
+  code-network:
+    driver: bridge
+
+volumes:
+  pgdata:

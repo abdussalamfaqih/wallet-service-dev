@@ -1,0 +1,25 @@
+version: "3"
+
+services:
+  postgres:
+      image: postgres:14-alpine
+      ports:
+        - 5432:5432
+      volumes:
+        - pgdata:/var/lib/postgresql/data
+      environment:
+        - POSTGRES_PASSWORD=strong_password
+        - POSTGRES_USER=postgres
+        - POSTGRES_DB=wallet_db
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8089:8080
+      
+networks:
+  code-network:
+    driver: bridge
+
+volumes:
+  pgdata:

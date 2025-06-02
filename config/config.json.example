@@ -1,0 +1,14 @@
+{
+    "app": {
+      "name": "wallet-service-dev",
+      "port": "8080",
+      "secret_key": "super_secret_key_123"
+    },
+    "database": {
+      "name": "wallet_app",
+      "username": "user_db",
+      "password": "pass_db",
+      "host": "localhost",
+      "port": 3306
+    }
+  }
