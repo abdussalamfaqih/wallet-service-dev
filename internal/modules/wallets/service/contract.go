@@ -4,11 +4,10 @@ import (
 	"context"
 
 	"github.com/abdussalamfaqih/wallet-service-dev/internal/modules/wallets/presentations"
-	"github.com/abdussalamfaqih/wallet-service-dev/internal/modules/wallets/repository"
 )
 
 type Wallet interface {
 	CreateAccount(ctx context.Context, req presentations.CreateAccount) error
-	GetAccount(ctx context.Context, accountID string) (repository.Account, error)
+	GetAccount(ctx context.Context, accountID string) (presentations.Account, error)
 	SubmitTransaction(ctx context.Context, req presentations.CreateTransaction) error
 }

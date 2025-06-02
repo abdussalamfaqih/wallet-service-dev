@@ -31,6 +31,7 @@ func (handler *WalletHandler) GetAccountHandler(w http.ResponseWriter, r *http.R
 
 	accountID := mux.Vars(r)["account_id"]
 
+	w.Header().Add("Content-Type", "application/json")
 	result, err := handler.ucase.GetAccount(ctx, accountID)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -41,10 +42,8 @@ func (handler *WalletHandler) GetAccountHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	if result.ID == 0 {
+	if result.AccountID == "" {
 		w.WriteHeader(http.StatusNotFound)
-
-		w.Header().Add("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(ResponsePayload{
 			Code:    http.StatusNotFound,
 			Message: "DATA_NOT_FOUND",
@@ -54,8 +53,6 @@ func (handler *WalletHandler) GetAccountHandler(w http.ResponseWriter, r *http.R
 	}
 
 	w.WriteHeader(http.StatusOK)
-
-	w.Header().Add("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(ResponsePayload{
 		Code:    http.StatusOK,
 		Message: "SUCCESS",

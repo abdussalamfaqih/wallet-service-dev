@@ -95,7 +95,7 @@ type Repository struct {
 }
 
 // NewRepository creates a new repository instance
-func NewRepository(db *sql.DB, config *Config) *Repository {
+func NewRepository(db *sql.DB) *Repository {
 	txMgr := NewTransactionManager(db)
 	return &Repository{
 		db:    db,

@@ -10,11 +10,11 @@ import (
 )
 
 func NewDB(cfg appconfig.Database) *db.Repository {
-	session, _ := createSession(&cfg)
-	return db.NewRepository(session, nil)
+	session, _ := CreateSession(&cfg)
+	return db.NewRepository(session)
 }
 
-func createSession(cfg *appconfig.Database) (*sql.DB, error) {
+func CreateSession(cfg *appconfig.Database) (*sql.DB, error) {
 	session, err := sql.Open("postgres", fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=disable", cfg.Username, cfg.Password, cfg.Host, cfg.Port, cfg.Name))
 	session.SetMaxOpenConns(20)
 	session.SetMaxIdleConns(10)

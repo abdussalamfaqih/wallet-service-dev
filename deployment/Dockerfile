@@ -18,7 +18,7 @@ COPY --from=builder /go/src/github.com/abdussalamfaqih/wallet-service-dev .
 
 RUN chmod +x ./wallet-service-dev
 
-USER root
+USER appuser
 
 # executable
 ENTRYPOINT [ "./wallet-service-dev" ]

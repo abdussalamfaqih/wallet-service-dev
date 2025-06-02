@@ -8,6 +8,7 @@ import (
 	"syscall"
 
 	"github.com/abdussalamfaqih/wallet-service-dev/cmd/http"
+	"github.com/abdussalamfaqih/wallet-service-dev/cmd/migrations"
 	"github.com/spf13/cobra"
 )
 
@@ -16,7 +17,7 @@ func Run() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	quit := make(chan os.Signal)
+	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-quit
@@ -30,6 +31,13 @@ func Run() {
 			Short: "Run HTTP Server",
 			Run: func(cmd *cobra.Command, args []string) {
 				http.Start(ctx)
+			},
+		},
+		{
+			Use:   "run-migration",
+			Short: "Run HTTP Server",
+			Run: func(cmd *cobra.Command, args []string) {
+				migrations.RunDBMigration(ctx)
 			},
 		},
 	}

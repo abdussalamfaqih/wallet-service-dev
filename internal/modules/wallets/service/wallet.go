@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/google/uuid"
@@ -24,42 +25,60 @@ func NewWalletService(repo repository.WalletRepository) Wallet {
 	}
 }
 
-func (s *wallet) GetAccount(ctx context.Context, accountID string) (repository.Account, error) {
+func (s *wallet) GetAccount(ctx context.Context, accountID string) (presentations.Account, error) {
 	if err := validateAccountID(accountID); err != nil {
-		return repository.Account{}, err
+		slog.Warn("[GetAccount] failed validation", slog.Any("err", err))
+		return presentations.Account{}, err
 	}
 
 	result, err := s.repo.GetAccount(ctx, accountID)
 	if err != nil {
-		return result, err
+		slog.Warn("[GetAccount] failed GetAccount", slog.Any("err", err))
+		return presentations.Account{}, err
 	}
 
 	if result.ID == 0 {
-		return result, errors.New("data not found")
+		slog.Warn("[GetAccount] failed data not found", slog.Any("accountID", accountID))
+		return presentations.Account{}, errors.New("data not found")
 	}
 
-	return result, nil
+	resp := presentations.Account{
+		AccountID: result.AccountID,
+		Balance:   result.Balance,
+	}
+
+	slog.Info("[GetAccount] success", slog.Any("accountID", accountID))
+	return resp, nil
 }
 
 func (s *wallet) CreateAccount(ctx context.Context, req presentations.CreateAccount) error {
 	if err := validateCreateAccount(req); err != nil {
+		slog.Warn("[CreateAccount] failed validation", slog.Any("err", err))
 		return err
 	}
 
 	exist, err := s.repo.GetAccount(ctx, req.AccountID)
 	if err != nil {
+		slog.Warn("[GetAccount] failed GetAccount", slog.Any("err", err))
 		return err
 	}
 
 	if exist.ID > 0 {
+		slog.Warn("[CreateAccount] data already exists", slog.Any("req", req))
 		return errors.New("data already exists")
 	}
 
-	return s.repo.CreateAccount(ctx, prepareDepositPayload(repository.Account{
+	err = s.repo.CreateAccount(ctx, prepareDepositPayload(repository.Account{
 		AccountID: req.AccountID,
 		Balance:   req.Amount,
-	},
-	))
+	}))
+	if err != nil {
+		slog.Warn("[CreateAccount] failed create Account", slog.Any("req", req))
+		return err
+	}
+
+	slog.Info("[CreateAccount] success", slog.Any("req", req))
+	return nil
 }
 
 func (s *wallet) SubmitTransaction(ctx context.Context, req presentations.CreateTransaction) error {
@@ -71,34 +90,47 @@ func (s *wallet) SubmitTransaction(ctx context.Context, req presentations.Create
 		return err
 	}
 
-	dataFrom, err := s.GetAccount(ctx, req.From)
+	dataFrom, err := s.repo.GetAccount(ctx, req.From)
 	if err != nil {
+		slog.Warn("[SubmitTransaction] failed GetAccount sender", slog.Any("err", err))
 		return err
 	}
 
-	dataTo, err := s.GetAccount(ctx, req.To)
+	dataTo, err := s.repo.GetAccount(ctx, req.To)
 	if err != nil {
+		slog.Warn("[SubmitTransaction] failed GetAccount receiver", slog.Any("err", err))
 		return err
 	}
 
 	if dataFrom.ID == 0 || dataTo.ID == 0 {
+		slog.Warn("[SubmitTransaction] failed data not found", slog.Any("req", req))
 		return errors.New("data not found")
 	}
 
 	if err := validateAccounts(dataTo, dataFrom, req.Amount); err != nil {
+		slog.Warn("[SubmitTransaction] failed validation", slog.Any("err", err))
 		return err
 	}
 
 	payloadReq := prepareTrxPayload(dataFrom, dataTo, req.Amount)
 
-	return s.repo.SubmitTransaction(ctx, payloadReq)
+	err = s.repo.SubmitTransaction(ctx, payloadReq)
+	if err != nil {
+		slog.Warn("[SubmitTransaction] failed submit transaction", slog.Any("req", req))
+		return err
+	}
+	slog.Info("[SubmitTransaction] success", slog.Any("req", req))
+	return nil
 }
 
 func prepareTrxPayload(from, to repository.Account, amount float64) repository.TransactionPayload {
 
 	var payload repository.TransactionPayload
 
+	fromOldBalance := from.Balance
 	from.Balance -= amount
+
+	toOldBalance := to.Balance
 	to.Balance += amount
 
 	payload.From = from
@@ -129,7 +161,7 @@ func prepareTrxPayload(from, to repository.Account, amount float64) repository.T
 		EntryType:     consts.EntryTypeDebit,
 		Amount:        amount,
 		BalanceAfter:  from.Balance,
-		BalanceBefore: from.Balance + amount,
+		BalanceBefore: fromOldBalance,
 		Description:   "transfer transaction",
 		CreatedAt:     time.Now(),
 	}
@@ -141,7 +173,7 @@ func prepareTrxPayload(from, to repository.Account, amount float64) repository.T
 		EntryType:     consts.EntryTypeCredit,
 		Amount:        amount,
 		BalanceAfter:  to.Balance,
-		BalanceBefore: to.Balance - amount,
+		BalanceBefore: toOldBalance,
 		Description:   "transfer transaction",
 		CreatedAt:     time.Now(),
 	}
@@ -156,7 +188,7 @@ func prepareDepositPayload(acc repository.Account) repository.DepositPayload {
 	payload.Transaction = repository.Transaction{
 		ID:              uuid.NewString(),
 		ReferenceNumber: uuid.NewString(),
-		Type:            "deposit",
+		Type:            consts.TransactionTypeDeposit,
 		ToAccountID: sql.NullString{
 			String: acc.AccountID,
 			Valid:  true,

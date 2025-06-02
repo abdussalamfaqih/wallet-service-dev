@@ -7,7 +7,7 @@
 
 ## Preparations
 1. Have Golang with minimum version of 1.21
-2. Have Goose migration tools available as its used for migration purpose, reference: [link](https://github.com/pressly/goose)
+2. [Optional] Have Goose migration tools available as its used for migration purpose, reference: [link](https://github.com/pressly/goose)
 
 ## Run The Service
 To run in containerized environments:
@@ -15,7 +15,13 @@ To run in containerized environments:
 docker-compose -f deployment/docker-compose.yml --project-directory . up 
 ```
 
-Execute Migration scripts from root directory, example script using static values:
+Execute Migration scripts from root directory, 
+Run the go command to execute migration,
+```bash
+go run main.go run-migration
+```
+
+or if you have goose cmd, this is example script using static values:
 ```bash
 goose -dir=db/migrations postgres "user=postgres password=strong_password dbname=wallet_db sslmode=disable" up
 ```
@@ -28,6 +34,10 @@ and ensure the postgres is available, can use the compose infra and run the migr
 ```bash
 docker-compose -f deployment/docker-compose-db.yml up
 ```
+> [!NOTE] 
+> To ensure the connection to db works, check the `host` in `config/config.json` file using the valid key
+> - for docker-compose env, host: postgres
+> - local env, can use host: localhost
 
 ### Available API
 #### Create Account
