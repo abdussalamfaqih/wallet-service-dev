@@ -6,7 +6,7 @@
 - API Create Transactions
 
 ## Preparations
-1. Have Golang with minimum version of 1.21
+1. Have Golang with minimum version of 1.24
 2. [Optional] Have Goose migration tools available as its used for migration purpose, reference: [link](https://github.com/pressly/goose)
 
 ## Run The Service
