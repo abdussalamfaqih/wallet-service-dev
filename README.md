@@ -35,9 +35,9 @@ and ensure the postgres is available, can use the compose infra and run the migr
 docker-compose -f deployment/docker-compose-db.yml up
 ```
 > [!NOTE] 
-> To ensure the connection to db works, check the `host` in `config/config.json` file using the valid key
-> - for docker-compose env, host: postgres
-> - local env, can use host: localhost
+> To ensure the connection to db works, check the `host` in `config/config.json` file using the valid value
+> - for docker-compose env, host: `postgres`
+> - for running locally (service or migration), can use host: `localhost`
 
 ### Available API
 #### Create Account
