@@ -5,10 +5,10 @@
       "secret_key": "super_secret_key_123"
     },
     "database": {
-      "name": "wallet_app",
-      "username": "user_db",
-      "password": "pass_db",
+      "name": "wallet_db",
+      "username": "postgres",
+      "password": "strong_password",
       "host": "localhost",
-      "port": 3306
+      "port": 5432
     }
   }

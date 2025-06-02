@@ -16,9 +16,7 @@ FROM alpine:3.21
 
 COPY --from=builder /go/src/github.com/abdussalamfaqih/wallet-service-dev .
 
-RUN chmod +x ./wallet-service-dev
-
-USER appuser
+USER root
 
 # executable
 ENTRYPOINT [ "./wallet-service-dev" ]
