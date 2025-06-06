@@ -7,18 +7,19 @@
 
 ## Preparations
 1. Have Golang with minimum version of 1.24
-2. [Optional] Have Goose migration tools available as its used for migration purpose, reference: [link](https://github.com/pressly/goose)
+2. [Optional] Have Makefile installed to run below command, if unable, copy the command directly in terminal to run each command
+3. [Optional] Have Goose migration tools available as its used for migration purpose, reference: [link](https://github.com/pressly/goose)
 
 ## Run The Service
 To run in containerized environments:
 ```bash
-docker-compose -f deployment/docker-compose.yml --project-directory . up 
+make run-service 
 ```
 
 Execute Migration scripts from root directory, 
 Run the go command to execute migration,
 ```bash
-go run main.go run-migration
+make run-migration
 ```
 
 or if you have goose cmd, this is example script using static values:
@@ -28,11 +29,11 @@ goose -dir=db/migrations postgres "user=postgres password=strong_password dbname
 
 To run in local, use command: 
 ```bash
-go run main.go run-http
+make run-local
 ```
 and ensure the postgres is available, can use the compose infra and run the migration after ready:
 ```bash
-docker-compose -f deployment/docker-compose-db.yml up
+make run-db
 ```
 > [!NOTE] 
 > To ensure the connection to db works, check the `host` in `config/config.json` file using the valid value
@@ -48,8 +49,8 @@ docker-compose -f deployment/docker-compose-db.yml up
 curl --location 'http://localhost:8080/v1/accounts' \
 --header 'Content-Type: application/json' \
 --data '{
-    "account_id": "3128e237-fbd1-4271-9e40-17b132db5859", 
-    "amount": 100
+    "account_id": 456,
+    "initial_balance": "200.23344"
 }'
 ```
 
@@ -58,7 +59,7 @@ curl --location 'http://localhost:8080/v1/accounts' \
 
 
 ```bash
-curl --location 'http://localhost:8080/v1/accounts/{account_id}'
+curl --location 'http://localhost:8080/v1/accounts/456'
 ```
 
 #### Create Transaction
@@ -71,70 +72,8 @@ curl --location 'http://localhost:8080/v1/accounts/{account_id}'
 curl --location 'http://localhost:8080/v1/transactions' \
 --header 'Content-Type: application/json' \
 --data '{
-    "from": "3128e237-fbd1-4271-9e40-17b132db5859",
-    "to": "c5934062-e368-4bc0-be95-c2265bb7430f",
-    "amount": 20
+    "source_account_id": 123,
+    "destination_account_id": 456,
+    "amount": "100.12345"
 }'
 ```
-
-### Project Structure
-```bash
-├── README.md
-├── cmd
-│   ├── http
-│   │   ├── http.go
-│   │   └── wallet.go
-│   └── root.go
-├── config
-│   ├── config.json
-│   └── config.json.example
-├── db
-│   └── migrations
-│       ├── 20250601150631_add_table_accounts.sql
-│       ├── 20250601150641_add_table_transactions.sql
-│       └── 20250601181846_add_table_ledger_entries.sql
-├── deployment
-│   ├── Dockerfile
-│   ├── docker-compose-db.yml
-│   └── docker-compose.yml
-├── go.mod
-├── go.sum
-├── internal
-│   ├── appconfig
-│   │   └── config.go
-│   ├── bootstrap
-│   │   └── db.go
-│   ├── consts
-│   │   ├── common.go
-│   │   └── wallet.go
-│   ├── modules
-│   │   └── wallets
-│   │       ├── delivery
-│   │       │   └── http
-│   │       │       ├── middlewares
-│   │       │       │   └── common.go
-│   │       │       ├── response.go
-│   │       │       └── wallet.go
-│   │       ├── presentations
-│   │       │   └── wallet.go
-│   │       ├── repository
-│   │       │   ├── contract.go
-│   │       │   └── wallet.go
-│   │       └── service
-│   │           ├── contract.go
-│   │           ├── validations.go
-│   │           └── wallet.go
-│   └── utils
-│       └── decimal.go
-├── main.go
-└── pkg
-    ├── config
-    │   └── viper.go
-    ├── db
-    │   ├── contract.go
-    │   └── postgres.go
-    ├── decimal
-    └── logger
-        └── zap.go
-```
-

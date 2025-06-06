@@ -14,10 +14,8 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func Start(ctx context.Context) {
+func Start(ctx context.Context, cfg appconfig.Config) {
 	router := mux.NewRouter()
-
-	cfg := appconfig.LoadConfig()
 
 	RegisterHandlers(router, cfg)
 

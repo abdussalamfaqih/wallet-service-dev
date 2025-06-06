@@ -3,6 +3,7 @@ package http
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/abdussalamfaqih/wallet-service-dev/internal/modules/wallets/delivery/http/middlewares"
 	"github.com/abdussalamfaqih/wallet-service-dev/internal/modules/wallets/presentations"
@@ -30,9 +31,27 @@ func (handler *WalletHandler) GetAccountHandler(w http.ResponseWriter, r *http.R
 	ctx := r.Context()
 
 	accountID := mux.Vars(r)["account_id"]
+	accID, err := strconv.Atoi(accountID)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(ResponsePayload{
+			Code:    http.StatusBadRequest,
+			Message: err.Error(),
+		})
+		return
+	}
+
+	if accID == 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(ResponsePayload{
+			Code:    http.StatusBadRequest,
+			Message: "invalid accountID",
+		})
+		return
+	}
 
 	w.Header().Add("Content-Type", "application/json")
-	result, err := handler.ucase.GetAccount(ctx, accountID)
+	result, err := handler.ucase.GetAccount(ctx, accID)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(ResponsePayload{
@@ -42,7 +61,7 @@ func (handler *WalletHandler) GetAccountHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	if result.AccountID == "" {
+	if result.AccountID == 0 {
 		w.WriteHeader(http.StatusNotFound)
 		json.NewEncoder(w).Encode(ResponsePayload{
 			Code:    http.StatusNotFound,
@@ -53,11 +72,7 @@ func (handler *WalletHandler) GetAccountHandler(w http.ResponseWriter, r *http.R
 	}
 
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(ResponsePayload{
-		Code:    http.StatusOK,
-		Message: "SUCCESS",
-		Data:    result,
-	})
+	json.NewEncoder(w).Encode(result)
 }
 
 func (handler *WalletHandler) CreateAccountHandler(w http.ResponseWriter, r *http.Request) {
@@ -66,6 +81,14 @@ func (handler *WalletHandler) CreateAccountHandler(w http.ResponseWriter, r *htt
 	ctx := r.Context()
 
 	json.NewDecoder(r.Body).Decode(&reqData)
+	if reqData.AccountID == 0 || reqData.InitialBalance == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(ResponsePayload{
+			Code:    http.StatusBadRequest,
+			Message: "invalid request body",
+		})
+		return
+	}
 
 	err := handler.ucase.CreateAccount(ctx, reqData)
 	if err != nil {
@@ -77,12 +100,8 @@ func (handler *WalletHandler) CreateAccountHandler(w http.ResponseWriter, r *htt
 		return
 	}
 
-	w.WriteHeader(http.StatusCreated)
+	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(ResponsePayload{
-		Code:    http.StatusOK,
-		Message: "SUCCESS",
-	})
 }
 
 func (handler *WalletHandler) CreateTransactionHandler(w http.ResponseWriter, r *http.Request) {
@@ -91,6 +110,14 @@ func (handler *WalletHandler) CreateTransactionHandler(w http.ResponseWriter, r 
 	ctx := r.Context()
 
 	json.NewDecoder(r.Body).Decode(&reqData)
+	if reqData.SourceAccountID == 0 || reqData.DestinationAccountID == 0 || reqData.Amount == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(ResponsePayload{
+			Code:    http.StatusBadRequest,
+			Message: "invalid request body",
+		})
+		return
+	}
 
 	err := handler.ucase.SubmitTransaction(ctx, reqData)
 	if err != nil {
@@ -102,10 +129,5 @@ func (handler *WalletHandler) CreateTransactionHandler(w http.ResponseWriter, r 
 		return
 	}
 
-	w.WriteHeader(http.StatusCreated)
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(ResponsePayload{
-		Code:    http.StatusOK,
-		Message: "SUCCESS",
-	})
+	w.WriteHeader(http.StatusOK)
 }

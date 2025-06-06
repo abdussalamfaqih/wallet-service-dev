@@ -2,7 +2,7 @@
 -- +goose StatementBegin
 CREATE TABLE IF NOT EXISTS accounts (
     id SERIAL PRIMARY KEY,
-    account_id UUID NOT NULL UNIQUE,
+    account_id INT NOT NULL UNIQUE,
     currency CHAR(10) NOT NULL,
     status CHAR(20) DEFAULT 'active',
     balance DECIMAL(20, 6) DEFAULT 0.00,

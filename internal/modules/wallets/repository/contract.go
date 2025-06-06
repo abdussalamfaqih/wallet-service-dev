@@ -11,14 +11,14 @@ import (
 
 type WalletRepository interface {
 	CreateAccount(ctx context.Context, payload DepositPayload) error
-	GetAccount(ctx context.Context, accountID string) (Account, error)
+	GetAccount(ctx context.Context, accountID int) (Account, error)
 	SubmitTransaction(ctx context.Context, payload TransactionPayload) error
 }
 
 type (
 	Account struct {
 		ID        int       `json:"id"`
-		AccountID string    `json:"account_id"`
+		AccountID int       `json:"account_id"`
 		Currency  string    `json:"currency"`
 		Status    string    `json:"status"`
 		Balance   float64   `json:"balance"`
@@ -31,8 +31,8 @@ type (
 		ReferenceNumber string                 `json:"reference_number"`
 		Type            consts.TransactionType `json:"type"`
 		Description     string                 `json:"description,omitempty"`
-		FromAccountID   sql.NullString         `json:"from_account_id,omitempty"`
-		ToAccountID     sql.NullString         `json:"to_account_id,omitempty"`
+		FromAccountID   sql.NullInt64          `json:"from_account_id,omitempty"`
+		ToAccountID     sql.NullInt64          `json:"to_account_id,omitempty"`
 		Amount          float64                `json:"amount"`
 		Metadata        json.RawMessage        `json:"metadata,omitempty"`
 		Status          string                 `json:"status"`
@@ -42,7 +42,7 @@ type (
 	LedgerEntry struct {
 		ID            string           `json:"id"`
 		TransactionID string           `json:"transaction_id"`
-		AccountID     string           `json:"account_id"`
+		AccountID     int              `json:"account_id"`
 		Amount        float64          `json:"amount"`
 		EntryType     consts.EntryType `json:"entry_type"`
 		BalanceBefore float64          `json:"balance_before,omitempty"`

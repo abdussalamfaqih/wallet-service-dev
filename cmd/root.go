@@ -9,8 +9,11 @@ import (
 
 	"github.com/abdussalamfaqih/wallet-service-dev/cmd/http"
 	"github.com/abdussalamfaqih/wallet-service-dev/cmd/migrations"
+	"github.com/abdussalamfaqih/wallet-service-dev/internal/appconfig"
 	"github.com/spf13/cobra"
 )
+
+var configFile string
 
 func Run() {
 	rootCmd := &cobra.Command{}
@@ -30,19 +33,22 @@ func Run() {
 			Use:   "run-http",
 			Short: "Run HTTP Server",
 			Run: func(cmd *cobra.Command, args []string) {
-				http.Start(ctx)
+				cfg := appconfig.LoadConfig(configFile)
+				http.Start(ctx, cfg)
 			},
 		},
 		{
 			Use:   "run-migration",
 			Short: "Run HTTP Server",
 			Run: func(cmd *cobra.Command, args []string) {
-				migrations.RunDBMigration(ctx)
+				cfg := appconfig.LoadConfig(configFile)
+				migrations.RunDBMigration(ctx, cfg)
 			},
 		},
 	}
 
 	rootCmd.AddCommand(cmd...)
+	rootCmd.PersistentFlags().StringVar(&configFile, "config_file", "config.json", "Path to the config file (e.g. config.json)")
 	if err := rootCmd.Execute(); err != nil {
 		log.Fatal(err)
 	}

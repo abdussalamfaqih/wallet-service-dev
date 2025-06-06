@@ -27,11 +27,11 @@ type (
 	}
 )
 
-func LoadConfig() Config {
+func LoadConfig(path string) Config {
 
 	var appConfig Config
 
 	log.Println("Loading Server Configurations...")
-	config.LoadConfig(&appConfig)
+	config.LoadConfig(&appConfig, path)
 	return appConfig
 }

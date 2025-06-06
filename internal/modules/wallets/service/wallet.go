@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -25,7 +26,7 @@ func NewWalletService(repo repository.WalletRepository) Wallet {
 	}
 }
 
-func (s *wallet) GetAccount(ctx context.Context, accountID string) (presentations.Account, error) {
+func (s *wallet) GetAccount(ctx context.Context, accountID int) (presentations.Account, error) {
 	if err := validateAccountID(accountID); err != nil {
 		slog.Warn("[GetAccount] failed validation", slog.Any("err", err))
 		return presentations.Account{}, err
@@ -44,7 +45,7 @@ func (s *wallet) GetAccount(ctx context.Context, accountID string) (presentation
 
 	resp := presentations.Account{
 		AccountID: result.AccountID,
-		Balance:   result.Balance,
+		Balance:   fmt.Sprintf("%v", result.Balance),
 	}
 
 	slog.Info("[GetAccount] success", slog.Any("accountID", accountID))
@@ -68,9 +69,10 @@ func (s *wallet) CreateAccount(ctx context.Context, req presentations.CreateAcco
 		return errors.New("data already exists")
 	}
 
+	reqAmount, _ := strconv.ParseFloat(req.InitialBalance, 64)
 	err = s.repo.CreateAccount(ctx, prepareDepositPayload(repository.Account{
 		AccountID: req.AccountID,
-		Balance:   req.Amount,
+		Balance:   reqAmount,
 	}))
 	if err != nil {
 		slog.Warn("[CreateAccount] failed create Account", slog.Any("req", req))
@@ -82,21 +84,30 @@ func (s *wallet) CreateAccount(ctx context.Context, req presentations.CreateAcco
 }
 
 func (s *wallet) SubmitTransaction(ctx context.Context, req presentations.CreateTransaction) error {
-	if err := validateAccountID(req.From); err != nil {
+	if err := validateAccountID(req.SourceAccountID); err != nil {
 		return err
 	}
 
-	if err := validateAccountID(req.To); err != nil {
+	if err := validateAccountID(req.DestinationAccountID); err != nil {
 		return err
 	}
 
-	dataFrom, err := s.repo.GetAccount(ctx, req.From)
+	if req.DestinationAccountID == req.SourceAccountID {
+		return errors.New("request payload invalid")
+	}
+
+	reqAmount, err := strconv.ParseFloat(req.Amount, 64)
+	if err != nil {
+		return err
+	}
+
+	dataFrom, err := s.repo.GetAccount(ctx, req.SourceAccountID)
 	if err != nil {
 		slog.Warn("[SubmitTransaction] failed GetAccount sender", slog.Any("err", err))
 		return err
 	}
 
-	dataTo, err := s.repo.GetAccount(ctx, req.To)
+	dataTo, err := s.repo.GetAccount(ctx, req.DestinationAccountID)
 	if err != nil {
 		slog.Warn("[SubmitTransaction] failed GetAccount receiver", slog.Any("err", err))
 		return err
@@ -107,12 +118,12 @@ func (s *wallet) SubmitTransaction(ctx context.Context, req presentations.Create
 		return errors.New("data not found")
 	}
 
-	if err := validateAccounts(dataTo, dataFrom, req.Amount); err != nil {
+	if err := validateAccounts(dataTo, dataFrom, reqAmount); err != nil {
 		slog.Warn("[SubmitTransaction] failed validation", slog.Any("err", err))
 		return err
 	}
 
-	payloadReq := prepareTrxPayload(dataFrom, dataTo, req.Amount)
+	payloadReq := prepareTrxPayload(dataFrom, dataTo, reqAmount)
 
 	err = s.repo.SubmitTransaction(ctx, payloadReq)
 	if err != nil {
@@ -140,17 +151,17 @@ func prepareTrxPayload(from, to repository.Account, amount float64) repository.T
 		ID:              uuid.NewString(),
 		ReferenceNumber: uuid.NewString(),
 		Type:            consts.TransactionTypeTransfer,
-		FromAccountID: sql.NullString{
-			String: from.AccountID,
-			Valid:  true,
+		FromAccountID: sql.NullInt64{
+			Int64: int64(from.AccountID),
+			Valid: true,
 		},
-		ToAccountID: sql.NullString{
-			String: to.AccountID,
-			Valid:  true,
+		ToAccountID: sql.NullInt64{
+			Int64: int64(to.AccountID),
+			Valid: true,
 		},
 		Amount:      amount,
 		Status:      "completed",
-		Description: fmt.Sprintf("transfer %v from %s to %s", amount, from.AccountID, to.AccountID),
+		Description: fmt.Sprintf("transfer %v from %d to %d", amount, from.AccountID, to.AccountID),
 		CreatedAt:   time.Now(),
 	}
 
@@ -189,13 +200,13 @@ func prepareDepositPayload(acc repository.Account) repository.DepositPayload {
 		ID:              uuid.NewString(),
 		ReferenceNumber: uuid.NewString(),
 		Type:            consts.TransactionTypeDeposit,
-		ToAccountID: sql.NullString{
-			String: acc.AccountID,
-			Valid:  true,
+		ToAccountID: sql.NullInt64{
+			Int64: int64(acc.AccountID),
+			Valid: true,
 		},
 		Amount:      acc.Balance,
 		Status:      "completed",
-		Description: fmt.Sprintf("deposit %v to %s", acc.Balance, acc.AccountID),
+		Description: fmt.Sprintf("deposit %v to %d", acc.Balance, acc.AccountID),
 		CreatedAt:   time.Now(),
 	}
 

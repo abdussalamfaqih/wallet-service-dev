@@ -86,7 +86,7 @@ func (r *walletRepo) CreateAccount(ctx context.Context, payload DepositPayload) 
 	})
 }
 
-func (r *walletRepo) GetAccount(ctx context.Context, accountID string) (Account, error) {
+func (r *walletRepo) GetAccount(ctx context.Context, accountID int) (Account, error) {
 	var result Account
 	err := r.db.QueryRow(ctx, "SELECT id, account_id, status, balance, created_at, updated_at FROM accounts WHERE account_id = $1", accountID).Scan(&result.ID, &result.AccountID, &result.Status, &result.Balance, &result.CreatedAt, &result.UpdatedAt)
 	if err != nil && errors.Is(err, sql.ErrNoRows) {

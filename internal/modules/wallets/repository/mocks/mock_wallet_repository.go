@@ -56,7 +56,7 @@ func (mr *MockWalletRepositoryMockRecorder) CreateAccount(ctx, payload any) *gom
 }
 
 // GetAccount mocks base method.
-func (m *MockWalletRepository) GetAccount(ctx context.Context, accountID string) (repository.Account, error) {
+func (m *MockWalletRepository) GetAccount(ctx context.Context, accountID int) (repository.Account, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAccount", ctx, accountID)
 	ret0, _ := ret[0].(repository.Account)

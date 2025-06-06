@@ -22,4 +22,4 @@ USER root
 ENTRYPOINT [ "./wallet-service-dev" ]
 
 # # arguments that can be overridden
-CMD [ "run-http" ]
+CMD ["run-http", "--config_file=config.json"]

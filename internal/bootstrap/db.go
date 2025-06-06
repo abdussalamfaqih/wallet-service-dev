@@ -1,6 +1,7 @@
 package bootstrap
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"time"
@@ -10,7 +11,10 @@ import (
 )
 
 func NewDB(cfg appconfig.Database) *db.Repository {
-	session, _ := CreateSession(&cfg)
+	session, err := CreateSession(&cfg)
+	if err != nil {
+		panic(err)
+	}
 	return db.NewRepository(session)
 }
 
@@ -19,5 +23,13 @@ func CreateSession(cfg *appconfig.Database) (*sql.DB, error) {
 	session.SetMaxOpenConns(20)
 	session.SetMaxIdleConns(10)
 	session.SetConnMaxLifetime(10 * time.Minute)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	if err := session.PingContext(ctx); err != nil {
+		session.Close()
+		return nil, fmt.Errorf("database unreachable: %w", err)
+	}
 	return session, err
 }

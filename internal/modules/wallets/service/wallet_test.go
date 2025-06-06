@@ -24,45 +24,46 @@ func TestGetAccount(t *testing.T) {
 		name   string
 		mock   func()
 		err    error
-		req    string
+		req    int
 		result presentations.Account
 	}{
 		{
 			name:   "FAILED validation",
 			err:    errors.New("invalid account_id format"),
-			req:    "accountID",
+			req:    0,
 			result: presentations.Account{},
 			mock:   func() {},
 		},
 		{
 			name:   "FAILED db error",
 			err:    errTest,
-			req:    "c5934062-e368-4bc0-be95-c2265bb7430f",
+			req:    2,
 			result: presentations.Account{},
 			mock: func() {
-				mRepo.EXPECT().GetAccount(ctx, "c5934062-e368-4bc0-be95-c2265bb7430f").Return(repository.Account{}, errTest)
+				mRepo.EXPECT().GetAccount(ctx, 2).Return(repository.Account{}, errTest)
 			},
 		},
 		{
 			name:   "FAILED data not found",
 			err:    errors.New("data not found"),
-			req:    "c5934062-e368-4bc0-be95-c2265bb7430f",
+			req:    2,
 			result: presentations.Account{},
 			mock: func() {
-				mRepo.EXPECT().GetAccount(ctx, "c5934062-e368-4bc0-be95-c2265bb7430f").Return(repository.Account{}, nil)
+				mRepo.EXPECT().GetAccount(ctx, 2).Return(repository.Account{}, nil)
 			},
 		},
 		{
 			name: "SUCCESS",
 			err:  nil,
-			req:  "c5934062-e368-4bc0-be95-c2265bb7430f",
+			req:  2,
 			result: presentations.Account{
-				AccountID: "c5934062-e368-4bc0-be95-c2265bb7430f",
+				AccountID: 2,
+				Balance:   "0",
 			},
 			mock: func() {
-				mRepo.EXPECT().GetAccount(ctx, "c5934062-e368-4bc0-be95-c2265bb7430f").Return(repository.Account{
+				mRepo.EXPECT().GetAccount(ctx, 2).Return(repository.Account{
 					ID:        1,
-					AccountID: "c5934062-e368-4bc0-be95-c2265bb7430f",
+					AccountID: 2,
 				}, nil)
 			},
 		},
@@ -98,7 +99,8 @@ func TestCreateAccount(t *testing.T) {
 			name: "FAILED validation #1",
 			err:  errors.New("invalid account_id format"),
 			req: presentations.CreateAccount{
-				AccountID: "accountID",
+				AccountID:      0,
+				InitialBalance: "0",
 			},
 			mock: func() {},
 		},
@@ -106,7 +108,8 @@ func TestCreateAccount(t *testing.T) {
 			name: "FAILED validation #2",
 			err:  errors.New("amount cannot be less than 1.00"),
 			req: presentations.CreateAccount{
-				AccountID: "c5934062-e368-4bc0-be95-c2265bb7430f",
+				AccountID:      2,
+				InitialBalance: "0",
 			},
 			mock: func() {},
 		},
@@ -114,22 +117,22 @@ func TestCreateAccount(t *testing.T) {
 			name: "FAILED get db error",
 			err:  errTest,
 			req: presentations.CreateAccount{
-				AccountID: "c5934062-e368-4bc0-be95-c2265bb7430f",
-				Amount:    100,
+				AccountID:      2,
+				InitialBalance: "100",
 			},
 			mock: func() {
-				mRepo.EXPECT().GetAccount(ctx, "c5934062-e368-4bc0-be95-c2265bb7430f").Return(repository.Account{}, errTest)
+				mRepo.EXPECT().GetAccount(ctx, 2).Return(repository.Account{}, errTest)
 			},
 		},
 		{
 			name: "FAILED data exists",
 			err:  errors.New("data already exists"),
 			req: presentations.CreateAccount{
-				AccountID: "c5934062-e368-4bc0-be95-c2265bb7430f",
-				Amount:    100,
+				AccountID:      2,
+				InitialBalance: "100",
 			},
 			mock: func() {
-				mRepo.EXPECT().GetAccount(ctx, "c5934062-e368-4bc0-be95-c2265bb7430f").Return(repository.Account{
+				mRepo.EXPECT().GetAccount(ctx, 2).Return(repository.Account{
 					ID: 1,
 				}, nil)
 			},
@@ -138,11 +141,11 @@ func TestCreateAccount(t *testing.T) {
 			name: "FAILED insert error",
 			err:  errTest,
 			req: presentations.CreateAccount{
-				AccountID: "c5934062-e368-4bc0-be95-c2265bb7430f",
-				Amount:    100,
+				AccountID:      2,
+				InitialBalance: "100",
 			},
 			mock: func() {
-				mRepo.EXPECT().GetAccount(ctx, "c5934062-e368-4bc0-be95-c2265bb7430f").Return(repository.Account{}, nil)
+				mRepo.EXPECT().GetAccount(ctx, 2).Return(repository.Account{}, nil)
 
 				mRepo.EXPECT().CreateAccount(ctx, gomock.AssignableToTypeOf(repository.DepositPayload{})).Return(errTest)
 			},
@@ -151,11 +154,11 @@ func TestCreateAccount(t *testing.T) {
 			name: "SUCCESS",
 			err:  nil,
 			req: presentations.CreateAccount{
-				AccountID: "c5934062-e368-4bc0-be95-c2265bb7430f",
-				Amount:    100,
+				AccountID:      2,
+				InitialBalance: "100",
 			},
 			mock: func() {
-				mRepo.EXPECT().GetAccount(ctx, "c5934062-e368-4bc0-be95-c2265bb7430f").Return(repository.Account{}, nil)
+				mRepo.EXPECT().GetAccount(ctx, 2).Return(repository.Account{}, nil)
 
 				mRepo.EXPECT().CreateAccount(ctx, gomock.AssignableToTypeOf(repository.DepositPayload{})).Return(nil)
 			},
@@ -191,8 +194,20 @@ func TestSubmitTransaction(t *testing.T) {
 			name: "FAILED validation #1",
 			err:  errors.New("invalid account_id format"),
 			req: presentations.CreateTransaction{
-				To:   "accountID",
-				From: "accountID",
+				DestinationAccountID: 0,
+				SourceAccountID:      0,
+				Amount:               "0",
+			},
+			mock: func() {},
+		},
+
+		{
+			name: "FAILED validation #2",
+			err:  errors.New("request payload invalid"),
+			req: presentations.CreateTransaction{
+				DestinationAccountID: 1,
+				SourceAccountID:      1,
+				Amount:               "0",
 			},
 			mock: func() {},
 		},
@@ -200,46 +215,84 @@ func TestSubmitTransaction(t *testing.T) {
 			name: "FAILED get db #1",
 			err:  errTest,
 			req: presentations.CreateTransaction{
-				To:     "3128e237-fbd1-4271-9e40-17b132db5859",
-				From:   "c5934062-e368-4bc0-be95-c2265bb7430f",
-				Amount: 10,
+				DestinationAccountID: 2,
+				SourceAccountID:      3,
+				Amount:               "10",
 			},
 			mock: func() {
-				mRepo.EXPECT().GetAccount(ctx, "c5934062-e368-4bc0-be95-c2265bb7430f").Return(repository.Account{}, errTest)
+				mRepo.EXPECT().GetAccount(ctx, 3).Return(repository.Account{}, errTest)
 			},
 		},
 		{
 			name: "FAILED get db #1",
 			err:  errTest,
 			req: presentations.CreateTransaction{
-				To:     "3128e237-fbd1-4271-9e40-17b132db5859",
-				From:   "c5934062-e368-4bc0-be95-c2265bb7430f",
-				Amount: 10,
+				DestinationAccountID: 2,
+				SourceAccountID:      3,
+				Amount:               "10",
 			},
 			mock: func() {
-				mRepo.EXPECT().GetAccount(ctx, "c5934062-e368-4bc0-be95-c2265bb7430f").Return(repository.Account{
+				mRepo.EXPECT().GetAccount(ctx, 3).Return(repository.Account{
 					ID: 1,
 				}, nil)
-				mRepo.EXPECT().GetAccount(ctx, "3128e237-fbd1-4271-9e40-17b132db5859").Return(repository.Account{}, errTest)
+				mRepo.EXPECT().GetAccount(ctx, 2).Return(repository.Account{}, errTest)
+			},
+		},
+		{
+			name: "FAILED data not found",
+			err:  errors.New("data not found"),
+			req: presentations.CreateTransaction{
+				DestinationAccountID: 2,
+				SourceAccountID:      3,
+				Amount:               "10",
+			},
+			mock: func() {
+				mRepo.EXPECT().GetAccount(ctx, 3).Return(repository.Account{
+					ID: 1,
+				}, nil)
+				mRepo.EXPECT().GetAccount(ctx, 2).Return(repository.Account{}, nil)
+			},
+		},
+		{
+			name: "Error Insert",
+			err:  errTest,
+			req: presentations.CreateTransaction{
+				DestinationAccountID: 2,
+				SourceAccountID:      3,
+				Amount:               "10",
+			},
+			mock: func() {
+				mRepo.EXPECT().GetAccount(ctx, 3).Return(repository.Account{
+					ID:        1,
+					Balance:   50,
+					AccountID: 3,
+				}, nil)
+				mRepo.EXPECT().GetAccount(ctx, 2).Return(repository.Account{
+					ID:        2,
+					AccountID: 2,
+					Balance:   50,
+				}, nil)
+
+				mRepo.EXPECT().SubmitTransaction(ctx, gomock.AssignableToTypeOf(repository.TransactionPayload{})).Return(errTest)
 			},
 		},
 		{
 			name: "SUCCESS",
 			err:  nil,
 			req: presentations.CreateTransaction{
-				To:     "3128e237-fbd1-4271-9e40-17b132db5859",
-				From:   "c5934062-e368-4bc0-be95-c2265bb7430f",
-				Amount: 10,
+				DestinationAccountID: 2,
+				SourceAccountID:      3,
+				Amount:               "10",
 			},
 			mock: func() {
-				mRepo.EXPECT().GetAccount(ctx, "c5934062-e368-4bc0-be95-c2265bb7430f").Return(repository.Account{
+				mRepo.EXPECT().GetAccount(ctx, 3).Return(repository.Account{
 					ID:        1,
 					Balance:   50,
-					AccountID: "c5934062-e368-4bc0-be95-c2265bb7430f",
+					AccountID: 3,
 				}, nil)
-				mRepo.EXPECT().GetAccount(ctx, "3128e237-fbd1-4271-9e40-17b132db5859").Return(repository.Account{
+				mRepo.EXPECT().GetAccount(ctx, 2).Return(repository.Account{
 					ID:        2,
-					AccountID: "3128e237-fbd1-4271-9e40-17b132db5859",
+					AccountID: 2,
 					Balance:   50,
 				}, nil)
 

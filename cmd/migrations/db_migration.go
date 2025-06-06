@@ -10,8 +10,7 @@ import (
 	"github.com/pressly/goose"
 )
 
-func RunDBMigration(ctx context.Context) error {
-	cfg := appconfig.LoadConfig()
+func RunDBMigration(ctx context.Context, cfg appconfig.Config) error {
 
 	session, err := bootstrap.CreateSession(&cfg.Database)
 	if err != nil {

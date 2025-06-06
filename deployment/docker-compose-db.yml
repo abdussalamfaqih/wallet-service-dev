@@ -11,11 +11,15 @@ services:
         - POSTGRES_PASSWORD=strong_password
         - POSTGRES_USER=postgres
         - POSTGRES_DB=wallet_db
+      networks:
+      - code-network
   adminer:
     image: adminer
     restart: always
     ports:
       - 8089:8080
+    networks:
+      - code-network
       
 networks:
   code-network:
